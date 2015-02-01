@@ -179,12 +179,14 @@ int main()
 	// Read in the name of the model file.
 	GetModelFilename(filename);
 
-	//PrintDataInFile(filename);
+	
 
-	//cin >> garbage;
-
-	//return 0;
-
+	cin >> garbage;
+	if (garbage == 's')
+	{
+		PrintDataInFile(filename);
+		return 0;
+	}
 
 	string ext = GetExtension(string(filename));
 
@@ -739,7 +741,6 @@ bool PrintDataInFile(char* filename)
 
 
 
-
 bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT& objectCount, SubsetTableDesc** ppSubSetTable, MatrialDesc** ppMaterial)
 {
 	ifstream fin;
@@ -1024,6 +1025,15 @@ bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT&
 	bout.close();
 
 
+	delete[]sS;
+	delete[]pM;
+	delete[]tSB;
+	delete[]tSN;
+	delete[]tB;
+	delete[]tN;
+
+	delete[]Vertices;
+	delete[]Indices;
 
 	// Close the file.
 	fin.close();
