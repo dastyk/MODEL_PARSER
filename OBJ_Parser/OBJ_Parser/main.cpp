@@ -16,6 +16,30 @@ using namespace std;
 //////////////
 // TYPEDEFS //
 //////////////
+typedef unsigned int UINT;
+typedef unsigned long ULONG;
+
+struct SubsetTableDesc
+{
+	UINT SubsetID;
+	ULONG VertexStart;
+	ULONG VertexCount;
+	ULONG FaceStart;
+	ULONG FaceCount;
+};
+
+struct MatrialDesc
+{
+	XMFLOAT3 Ambient;
+	XMFLOAT3 Diffuse;
+	XMFLOAT3 Specular;
+	float SpecPower;
+	XMFLOAT3 Reflectivity;
+	float AlphaClip;
+	UINT DiffuseSize;
+	UINT NormalSize;
+};
+
 typedef struct
 {
 	float x, y, z;
@@ -62,6 +86,8 @@ void GetModelFilename(char*);
 bool ReadFileCounts(char*, int&, int&, int&, int&, int&);
 bool LoadDataStructures(char*, int, int, int, int,int);
 bool PrintDataInFile(char*);
+bool M3DReadFileCounts(char*, UINT&, UINT&, UINT&, SubsetTableDesc**, MatrialDesc**);
+
 
 void fToXM(XMFLOAT3* xm, VertexType v)
 {
@@ -83,12 +109,62 @@ void insertData(vertexData* data, VertexType p, VertexType t, VertexType n, unsi
 	data->ID = id;
 }
 
+void readData(XMFLOAT4* xm, ifstream* s)
+{
+	char temp;
+	(*s) >> xm->x;
+	(*s).get(temp);
+	(*s) >> xm->y;
+	(*s).get(temp);
+	(*s) >> xm->z;
+	(*s).get(temp);
+	(*s) >> xm->w;
+}
+
+void readData(XMFLOAT3* xm, ifstream* s)
+{
+	char temp;
+	(*s) >> xm->x;
+	(*s).get(temp);
+	(*s) >> xm->y;
+	(*s).get(temp);
+	(*s) >> xm->z;
+}
+
+void readData(XMFLOAT2* xm, ifstream* s)
+{
+	char temp;
+	(*s) >> xm->x;
+	(*s).get(temp);
+	(*s) >> xm->y;
+}
+
+void readData(float* xm, ifstream* s)
+{
+	char temp;
+	(*s) >> (*xm);
+}
+
 std::string removeExtension(const std::string& filename) {
 	size_t lastdot = filename.find_last_of(".");
 	if (lastdot == std::string::npos) return filename;
 	return filename.substr(0, lastdot);
 }
+std::string GetExtension(const std::string& filename)
+{
+	std::string::size_type idx;
 
+	idx = filename.rfind('.');
+
+	if (idx != std::string::npos)
+	{
+		return filename.substr(idx + 1);
+	}
+	else
+	{
+		// No extension found
+	}
+}
 
 //////////////////
 // MAIN PROGRAM //
@@ -97,40 +173,57 @@ int main()
 {
 	bool result;
 	char filename[256];
-	int vertexCount, textureCount, normalCount, faceCount, objectCount;
+	
 	char garbage;
 
 	// Read in the name of the model file.
 	GetModelFilename(filename);
 
-	PrintDataInFile(filename);
+	//PrintDataInFile(filename);
 
-	cin >> garbage;
+	//cin >> garbage;
 
-	return 0;
+	//return 0;
 
 
-	// Read in the number of vertices, tex coords, normals, and faces so that the data structures can be initialized with the exact sizes needed.
-	result = ReadFileCounts(filename, vertexCount, textureCount, normalCount, faceCount, objectCount);
-	if (!result)
+	string ext = GetExtension(string(filename));
+
+	if (ext == "m3d")
 	{
-		return -1;
+		UINT vertexCount, faceCount, objectCount;
+		SubsetTableDesc* SubsetTable;
+		MatrialDesc* Material;
+		M3DReadFileCounts(filename, vertexCount, faceCount, objectCount, &SubsetTable, &Material);
+	}
+	else if (ext == "obj")
+	{
+		int vertexCount, textureCount, normalCount, faceCount, objectCount;
+
+		// Read in the number of vertices, tex coords, normals, and faces so that the data structures can be initialized with the exact sizes needed.
+		result = ReadFileCounts(filename, vertexCount, textureCount, normalCount, faceCount, objectCount);
+		if (!result)
+		{
+			return -1;
+		}
+
+		// Display the counts to the screen for information purposes.
+		cout << endl;
+		cout << "Parts: " << objectCount << endl;
+		cout << "Vertices: " << vertexCount << endl;
+		cout << "UVs:      " << textureCount << endl;
+		cout << "Normals:  " << normalCount << endl;
+		cout << "Faces:    " << faceCount << endl;
+
+		// Now read the data from the file into the data structures and then output it in our model format.
+		result = LoadDataStructures(filename, vertexCount, textureCount, normalCount, faceCount, objectCount);
+		if (!result)
+		{
+			return -2;
+		}
 	}
 
-	// Display the counts to the screen for information purposes.
-	cout << endl;
-	cout << "Parts: " << objectCount << endl;
-	cout << "Vertices: " << vertexCount << endl;
-	cout << "UVs:      " << textureCount << endl;
-	cout << "Normals:  " << normalCount << endl;
-	cout << "Faces:    " << faceCount << endl;
-
-	// Now read the data from the file into the data structures and then output it in our model format.
-	result = LoadDataStructures(filename, vertexCount, textureCount, normalCount, faceCount, objectCount);
-	if (!result)
-	{
-		return -2;
-	}
+	
+	
 
 	// Notify the user the model has been converted.
 	cout << "\nFile has been converted." << endl;
@@ -635,4 +728,304 @@ bool PrintDataInFile(char* filename)
 	}
 
 	return true;
+}
+
+
+
+
+
+
+
+
+
+
+
+bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT& objectCount, SubsetTableDesc** ppSubSetTable, MatrialDesc** ppMaterial)
+{
+	ifstream fin;
+	char input, input2;
+	int byteWidth = 0;
+	string temp;
+	// Initialize the counts.
+	vertexCount = 0;
+	faceCount = 0;
+	objectCount = 0;
+
+	// Open the file.
+	fin.open(filename);
+
+	// Check if it was successful in opening the file.
+	if (fin.fail() == true)
+	{
+		return false;
+	}
+
+	fin.get(input);
+	while (input != '#')
+	{
+		fin.get(input);
+	}
+
+	// Read Material count
+	for (int k = 0; k < 10; k++)
+		fin.get(input);
+
+	fin >> objectCount;
+
+	// Read Vertex count
+	for (int k = 0; k < 10; k++)
+		fin.get(input);
+
+	fin >> vertexCount;
+
+	// Read FaceCount count
+	for (int k = 0; k < 11; k++)
+		fin.get(input);
+
+	fin >> faceCount;
+
+	SubsetTableDesc*& sS = (*ppSubSetTable) = new SubsetTableDesc[objectCount];
+	MatrialDesc*& pM = (*ppMaterial) = new MatrialDesc[objectCount];
+	unsigned int* tSB = new unsigned int[objectCount];
+	unsigned int* tSN = new unsigned int[objectCount];
+	string* tB = new string[objectCount];
+	string* tN = new string[objectCount];
+
+	while (input != '*')
+	{
+		fin.get(input);
+	}
+
+	for (int k = 0; k < 30; k++)
+		fin.get(input);
+
+	while (input == '*')
+	{
+		fin.get(input);
+	}
+
+	for (UINT i = 0; i < objectCount; i++)
+	{
+		// Read Ambient
+		for (int k = 0; k < 9; k++)
+			fin.get(input);
+
+		readData(&pM[i].Ambient, &fin);
+
+		// Read Diffuse
+		for (int k = 0; k < 9; k++)
+			fin.get(input);
+
+		readData(&pM[i].Diffuse, &fin);
+
+		// Read Specular
+		for (int k = 0; k < 11; k++)
+			fin.get(input);
+
+		readData(&pM[i].Specular, &fin);
+
+		// Read Specular power
+		for (int k = 0; k < 11; k++)
+			fin.get(input);
+
+		readData(&pM[i].SpecPower, &fin);
+
+		// Read Reflectivity
+		for (int k = 0; k < 14; k++)
+			fin.get(input);
+
+		readData(&pM[i].Reflectivity, &fin);
+
+		// Read AlphaClip
+		for (int k = 0; k < 11; k++)
+			fin.get(input);
+
+		readData(&pM[i].AlphaClip, &fin);
+
+		// Read DiffuseMap
+		for (int k = 0; k < 27; k++)
+			fin.get(input);
+
+		getline(fin, tB[i]);
+		tSB[i] = tB[i].size();
+
+		// Read NormalMap
+		for (int k = 0; k < 11; k++)
+			fin.get(input);
+
+		getline(fin, tN[i]);
+		tSN[i] = tN[i].size();
+
+		fin.get(input);
+	}
+
+	while (input != '*')
+	{
+		fin.get(input);
+	}
+
+	for (int k = 0; k < 30; k++)
+		fin.get(input);
+
+	while (input == '*')
+	{
+		fin.get(input);
+	}
+
+	for (UINT i = 0; i < objectCount; i++)
+	{
+		// Read SubsetID
+		for (int k = 0; k < 10; k++)
+			fin.get(input);
+
+		fin >> sS[i].SubsetID;
+
+		// Read VertexStart
+		for (int k = 0; k <  14; k++)
+			fin.get(input);
+
+		fin >> sS[i].VertexStart;
+
+		// Read VertexCount
+		for (int k = 0; k <  14; k++)
+			fin.get(input);
+
+		fin >> sS[i].VertexCount;
+
+		// Read FaceStart
+		for (int k = 0; k <  12; k++)
+			fin.get(input);
+
+		fin >> sS[i].FaceStart;
+
+		// Read FaceCount
+		for (int k = 0; k <  12; k++)
+			fin.get(input);
+
+		fin >> sS[i].FaceCount;
+
+	}
+
+	while (input != '*')
+	{
+		fin.get(input);
+	}
+
+	for (int k = 0; k <  30; k++)
+		fin.get(input);
+
+	while (input == '*')
+	{
+		fin.get(input);
+	}
+
+	vertexData* Vertices = new vertexData[vertexCount];
+
+	for (UINT j = 0; j < objectCount; j++)
+	{
+		for (ULONG i = sS[j].VertexStart; i < sS[j].VertexCount + sS[j].VertexStart; i++)
+		{
+			// Read Position
+			for (int k = 0; k < 10; k++)
+				fin.get(input);
+
+			readData(&Vertices[i].pos, &fin);
+
+			// Read Tangent
+			for (int k = 0; k < 9; k++)
+				fin.get(input);
+
+			readData(&XMFLOAT4(0,0,0,0), &fin);
+
+			// Read Normal
+			for (int k = 0; k < 8; k++)
+				fin.get(input);
+
+			readData(&Vertices[i].Normal, &fin);
+
+			// Read Tex-Coords
+			for (int k = 0; k < 12; k++)
+				fin.get(input);
+
+			readData(&Vertices[i].tex, &fin);
+
+
+			// Skip Blend
+			fin.get(input);
+			fin.get(input);
+			while (input != '\n')
+			{
+				fin.get(input);
+			}
+			fin.get(input);
+			while (input != '\n')
+			{
+				fin.get(input);
+			}
+
+
+
+			Vertices[i].ID = j;
+
+
+		}
+
+
+
+	}
+
+	while (input != '*')
+	{
+		fin.get(input);
+	}
+
+	for (int k = 0; k < 30; k++)
+		fin.get(input);
+
+	while (input == '*')
+	{
+		fin.get(input);
+	}
+
+
+	ULONG* Indices = new ULONG[faceCount * 3];
+	ULONG index = 0;
+	for (ULONG i = 0; i < faceCount; i++)
+	{
+		for (UINT j = 0; j < 3; j++)
+		{
+			fin >> Indices[index];
+			fin.get(input);
+			index++;
+		}
+	}
+
+	string name = string(filename);
+	ofstream bout;
+
+	bout.open(removeExtension(name) + ".smf", ios_base::binary);
+
+	Header head;
+	head.VertexCount = vertexCount;
+	head.IndexCount = faceCount*3;
+	head.bfOffBits = sizeof(Header);
+	head.ObjectCount = objectCount;
+
+	bout.write((char*)&head, sizeof(Header));
+
+	bout.write((char*)Vertices, sizeof(vertexData)*head.VertexCount);
+	bout.write((char*)Indices, sizeof(ULONG)*head.IndexCount);
+	bout.write((char*)tSB, sizeof(UINT)*head.ObjectCount);
+	for (UINT i = 0; i < head.ObjectCount; i++)
+	{
+		bout.write((char*)tB[i].c_str(), tSB[i]);
+	}
+
+	bout.close();
+
+
+
+	// Close the file.
+	fin.close();
+
 }
