@@ -36,8 +36,6 @@ struct MatrialDesc
 	float SpecPower;
 	XMFLOAT3 Reflectivity;
 	float AlphaClip;
-	UINT DiffuseSize;
-	UINT NormalSize;
 };
 
 typedef struct
@@ -694,8 +692,12 @@ bool PrintDataInFile(char* filename)
 	unsigned long* indices = new unsigned long[head.IndexCount];
 	unsigned int* textureSize = new unsigned int[head.ObjectCount];
 	char** textureArray = new char*[head.ObjectCount];
+	MatrialDesc* mA = new MatrialDesc[head.ObjectCount];
 
 	fseek(filePtr, head.bfOffBits, SEEK_SET);
+
+
+	fread(mA, sizeof(MatrialDesc), head.ObjectCount, filePtr);
 
 	fread(data, sizeof(vertexData), head.VertexCount, filePtr);
 	fread(indices, sizeof(unsigned long), head.IndexCount, filePtr);
@@ -711,8 +713,17 @@ bool PrintDataInFile(char* filename)
 		fread(textureArray[i], textureSize[i], 1, filePtr);
 	}
 
+	
+
 	for (unsigned int i = 0; i < head.ObjectCount; i++)
 	{
+		cout << "Ambient" << i << ": " << mA[i].Ambient.x << ", " << mA[i].Ambient.y << ", " << mA[i].Ambient.z << endl;
+		cout << "Diffuse" << i << ": " << mA[i].Diffuse.x << ", " << mA[i].Diffuse.y << ", " << mA[i].Diffuse.z << endl;
+		cout << "Specular" << i << ": " << mA[i].Specular.x << ", " << mA[i].Specular.y << ", " << mA[i].Specular.z << endl;
+		cout << "SpecPower" << i << ": " << mA[i].SpecPower << endl;
+		cout << "Reflectivity" << i << ": " << mA[i].Reflectivity.x << ", " << mA[i].Reflectivity.y << ", " << mA[i].Reflectivity.z << endl;
+		cout << "AlphaClip" << i << ": " << mA[i].AlphaClip << endl;
+
 		cout << "textureSize" << i << ": " << textureSize[i] << endl;
 		cout << "TextureName" << i << ": " << textureArray[i] << endl;
 	}
@@ -1021,6 +1032,7 @@ bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT&
 	head.ObjectCount = objectCount;
 
 	bout.write((char*)&head, sizeof(Header));
+	bout.write((char*)pM, sizeof(MatrialDesc)*head.ObjectCount);
 
 	bout.write((char*)Vertices, sizeof(vertexData)*head.VertexCount);
 	bout.write((char*)Indices, sizeof(ULONG)*head.IndexCount);
