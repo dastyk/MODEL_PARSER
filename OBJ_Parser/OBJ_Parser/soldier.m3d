@@ -13,8 +13,8 @@ SpecPower: 1.245731
 Reflectivity: 0 0 0
 AlphaClip: 0
 Effect: Basic
-DiffuseMap: head_diff.dds
-NormalMap: head_norm.dds
+DiffuseMap: head_diff.jpg
+NormalMap: head_norm.jpg
 
 Ambient: 1 1 1
 Diffuse: 1 1 1
@@ -23,8 +23,8 @@ SpecPower: 1.245731
 Reflectivity: 0 0 0
 AlphaClip: 0
 Effect: Basic
-DiffuseMap: jacket_diff.dds
-NormalMap: jacket_norm.dds
+DiffuseMap: jacket_diff.jpg
+NormalMap: jacket_norm.jpg
 
 Ambient: 0.8 0.8 0.8
 Diffuse: 0.8 0.8 0.8
@@ -33,8 +33,8 @@ SpecPower: 1.245731
 Reflectivity: 0 0 0
 AlphaClip: 0
 Effect: Basic
-DiffuseMap: pants_diff.dds
-NormalMap: pants_norm.dds
+DiffuseMap: pants_diff.jpg
+NormalMap: pants_norm.jpg
 
 Ambient: 1 1 1
 Diffuse: 1 1 1
@@ -43,8 +43,8 @@ SpecPower: 1.19372
 Reflectivity: 0 0 0
 AlphaClip: 0
 Effect: Basic
-DiffuseMap: upBody_diff.dds
-NormalMap: upBody_norm.dds
+DiffuseMap: upBody_diff.jpg
+NormalMap: upBody_norm.jpg
 
 Ambient: 1 1 1
 Diffuse: 1 1 1
@@ -53,8 +53,8 @@ SpecPower: 65.986
 Reflectivity: 0 0 0
 AlphaClip: 0
 Effect: Basic
-DiffuseMap: upBody_diff.dds
-NormalMap: upBody_norm.dds
+DiffuseMap: upBody_diff.jpg
+NormalMap: upBody_norm.jpg
 
 ***************SubsetTable*******************
 SubsetID: 0 VertexStart: 0 VertexCount: 3915 FaceStart: 0 FaceCount: 7230

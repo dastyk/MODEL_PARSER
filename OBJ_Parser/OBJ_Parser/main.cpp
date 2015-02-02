@@ -996,12 +996,17 @@ bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT&
 	ULONG index = 0;
 	for (ULONG i = 0; i < faceCount; i++)
 	{
-		for (UINT j = 0; j < 3; j++)
-		{
-			fin >> Indices[index];
-			fin.get(input);
-			index++;
-		}
+		fin >> Indices[index];
+		fin.get(input);
+		index++;
+
+		fin >> Indices[index+1];
+		fin.get(input);
+		index++;
+
+		fin >> Indices[index-1];
+		fin.get(input);
+		index++;
 	}
 
 	string name = string(filename);
