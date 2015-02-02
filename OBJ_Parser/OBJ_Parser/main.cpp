@@ -185,6 +185,7 @@ int main()
 	if (garbage == 's')
 	{
 		PrintDataInFile(filename);
+		cin >> garbage;
 		return 0;
 	}
 
@@ -718,16 +719,16 @@ bool PrintDataInFile(char* filename)
 
 	cout << endl;
 
-	for (int i = 0; i < head.VertexCount; i++)
-	{
-		cout << "Point" << i << ": " << data[i].pos.x << ", " << data[i].pos.y << ", " << data[i].pos.z << " | " << data[i].tex.x << ", " << data[i].tex.y << " | " << data[i].Normal.x << ", " << data[i].Normal.y << ", " << data[i].Normal.z << " | " << data[i].ID << endl;
-	}
-	cout << "Index: " << endl << endl;
+	//for (int i = 0; i < head.VertexCount; i++)
+	//{
+	//	cout << "Point" << i << ": " << data[i].pos.x << ", " << data[i].pos.y << ", " << data[i].pos.z << " | " << data[i].tex.x << ", " << data[i].tex.y << " | " << data[i].Normal.x << ", " << data[i].Normal.y << ", " << data[i].Normal.z << " | " << data[i].ID << endl;
+	//}
+	//cout << "Index: " << endl << endl;
 
-	for (int i = 0; i < head.IndexCount; i++)
-	{
-		cout << indices[i] << ", ";
-	}
+	//for (int i = 0; i < head.IndexCount; i++)
+	//{
+	//	cout << indices[i] << ", ";
+	//}
 
 	return true;
 }
@@ -848,17 +849,19 @@ bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT&
 			fin.get(input);
 
 		getline(fin, tB[i]);
-		tSB[i] = tB[i].size();
+		tSB[i] = tB[i].size() + 1;
 
 		// Read NormalMap
 		for (int k = 0; k < 11; k++)
 			fin.get(input);
 
 		getline(fin, tN[i]);
-		tSN[i] = tN[i].size();
+		tSN[i] = tN[i].size() + 1;
 
 		fin.get(input);
 	}
+
+
 
 	while (input != '*')
 	{
