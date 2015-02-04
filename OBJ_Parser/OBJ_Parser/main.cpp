@@ -189,6 +189,8 @@ int main()
 
 	string ext = GetExtension(string(filename));
 
+
+
 	if (ext == "m3d")
 	{
 		UINT vertexCount, faceCount, objectCount;
