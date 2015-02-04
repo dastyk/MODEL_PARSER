@@ -1,0 +1,55 @@
+***************m3d-File-Header***************
+#Materials 1
+#Vertices 4
+#Triangles 2
+#Bones 0
+#AnimationClips 0
+
+***************Materials*********************
+Ambient: 1 1 1
+Diffuse: 1 1 1
+Specular: 0.5 0.5 0.5
+SpecPower: 1.245731
+Reflectivity: 0 0 0
+AlphaClip: 0
+Effect: Basic
+DiffuseMap: head_diff.jpg
+NormalMap: head_norm.jpg
+
+***************SubsetTable*******************
+SubsetID: 0 VertexStart: 0 VertexCount: 4 FaceStart: 0 FaceCount: 2
+
+***************Vertices**********************
+Position: -0.333333 0.333333 0
+Tangent: -0.257403 0.5351538 -0.8045831 1
+Normal: 0 0 -1
+Tex-Coords: 0 0
+BlendWeights: 0.7470379 0.2529621 0 0
+BlendIndices: 7 9 0 0
+
+Position: 0.333333 0.333333 0
+Tangent: -0.257403 0.5351538 -0.8045831 1
+Normal: 0 0 -1
+Tex-Coords: 0 1
+BlendWeights: 0.7470379 0.2529621 0 0
+BlendIndices: 7 9 0 0
+
+Position: -0.333333 -0.333333 0
+Tangent: -0.257403 0.5351538 -0.8045831 1
+Normal: 0 0 -1
+Tex-Coords: 1 0
+BlendWeights: 0.7470379 0.2529621 0 0
+BlendIndices: 7 9 0 0
+
+Position: 0.333333 -0.333333 0
+Tangent: -0.257403 0.5351538 -0.8045831 1
+Normal: 0 0 -1
+Tex-Coords: 1 1
+BlendWeights: 0.7470379 0.2529621 0 0
+BlendIndices: 7 9 0 0
+
+
+***************Triangles*********************
+0 2 1
+1 2 3
+

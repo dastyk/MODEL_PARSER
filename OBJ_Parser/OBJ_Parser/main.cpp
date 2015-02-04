@@ -730,16 +730,16 @@ bool PrintDataInFile(char* filename)
 
 	cout << endl;
 
-	//for (int i = 0; i < head.VertexCount; i++)
-	//{
-	//	cout << "Point" << i << ": " << data[i].pos.x << ", " << data[i].pos.y << ", " << data[i].pos.z << " | " << data[i].tex.x << ", " << data[i].tex.y << " | " << data[i].Normal.x << ", " << data[i].Normal.y << ", " << data[i].Normal.z << " | " << data[i].ID << endl;
-	//}
-	//cout << "Index: " << endl << endl;
+	for (int i = 0; i < head.VertexCount; i++)
+	{
+		cout << "Point" << i << ": " << data[i].pos.x << ", " << data[i].pos.y << ", " << data[i].pos.z << " | " << data[i].tex.x << ", " << data[i].tex.y << " | " << data[i].Normal.x << ", " << data[i].Normal.y << ", " << data[i].Normal.z << " | " << data[i].ID << endl;
+	}
+	cout << "Index: " << endl << endl;
 
-	//for (int i = 0; i < head.IndexCount; i++)
-	//{
-	//	cout << indices[i] << ", ";
-	//}
+	for (int i = 0; i < head.IndexCount; i++)
+	{
+		cout << indices[i] << ", ";
+	}
 
 	return true;
 }
