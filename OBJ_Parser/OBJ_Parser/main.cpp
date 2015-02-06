@@ -19,6 +19,32 @@ using namespace std;
 typedef unsigned int UINT;
 typedef unsigned long ULONG;
 
+
+struct Bones
+{
+	XMFLOAT4X4 localOffset;
+	int ParentBone;
+};
+
+struct BoneFrame
+{
+	float time;
+	XMFLOAT3 Pos;
+	XMFLOAT3 Scale;
+	XMFLOAT4 Quat;
+};
+
+struct Bone
+{
+	UINT frames;
+	BoneFrame* boneFrames;
+};
+
+struct AnimClip
+{
+	Bone* bones;
+};
+
 struct SubsetTableDesc
 {
 	UINT SubsetID;
@@ -58,6 +84,13 @@ struct Header
 	unsigned long IndexCount;
 	unsigned long bfOffBits;	
 	unsigned int ObjectCount;
+	UINT BoneCount;
+	UINT AnimationClips;
+};
+
+struct UINT4
+{
+	UINT x, y, z, w;
 };
 
 struct vertexData
@@ -65,7 +98,9 @@ struct vertexData
 	XMFLOAT3 pos;
 	XMFLOAT2 tex;
 	XMFLOAT3 Normal;
-	unsigned int ID;
+	XMFLOAT4 BlendWeights;
+	UINT4 BlendIndices;
+	UINT ID;
 };
 
 struct Body
@@ -107,6 +142,53 @@ void insertData(vertexData* data, VertexType p, VertexType t, VertexType n, unsi
 	data->ID = id;
 }
 
+void readData(XMFLOAT4X4* xm, ifstream* s)
+{
+	char temp;
+	(*s) >> xm->_11;
+	(*s).get(temp);
+	(*s) >> xm->_12;
+	(*s).get(temp);
+	(*s) >> xm->_13;
+	(*s).get(temp);
+	(*s) >> xm->_14;
+
+	(*s) >> xm->_21;
+	(*s).get(temp);
+	(*s) >> xm->_22;
+	(*s).get(temp);
+	(*s) >> xm->_23;
+	(*s).get(temp);
+	(*s) >> xm->_24;
+
+	(*s) >> xm->_31;
+	(*s).get(temp);
+	(*s) >> xm->_32;
+	(*s).get(temp);
+	(*s) >> xm->_33;
+	(*s).get(temp);
+	(*s) >> xm->_34;
+
+	(*s) >> xm->_41;
+	(*s).get(temp);
+	(*s) >> xm->_42;
+	(*s).get(temp);
+	(*s) >> xm->_43;
+	(*s).get(temp);
+	(*s) >> xm->_44;
+}
+
+void readData(UINT4* xm, ifstream* s)
+{
+	char temp;
+	(*s) >> xm->x;
+	(*s).get(temp);
+	(*s) >> xm->y;
+	(*s).get(temp);
+	(*s) >> xm->z;
+	(*s).get(temp);
+	(*s) >> xm->w;
+}
 void readData(XMFLOAT4* xm, ifstream* s)
 {
 	char temp;
@@ -688,6 +770,8 @@ bool PrintDataInFile(char* filename)
 	cout << "VertexCount: " << head.VertexCount << endl;
 	cout << "IndexCount: " << head.IndexCount << endl;
 	cout << "ObjectCount: " << head.ObjectCount << endl;
+	cout << "BoneCount: " << head.BoneCount << endl;
+	cout << "AnimationClips: " << head.AnimationClips << endl;
 	cout << "bfOffBits: " << head.bfOffBits << endl << endl;
 
 	vertexData* data = new vertexData[head.VertexCount];
@@ -695,6 +779,13 @@ bool PrintDataInFile(char* filename)
 	unsigned int* textureSize = new unsigned int[head.ObjectCount];
 	char** textureArray = new char*[head.ObjectCount];
 	MatrialDesc* mA = new MatrialDesc[head.ObjectCount];
+	Bones* bones = new Bones[head.BoneCount];
+	AnimClip* clip = new AnimClip[head.AnimationClips];
+	for (UINT i = 0; i < head.AnimationClips; i++)
+	{
+		clip[i].bones = new Bone[head.BoneCount];
+	}
+
 
 	fseek(filePtr, head.bfOffBits, SEEK_SET);
 
@@ -731,8 +822,31 @@ bool PrintDataInFile(char* filename)
 	}
 
 	cout << endl;
+	if (head.BoneCount > 0)
+	{
 
-	for (int i = 0; i < head.VertexCount; i++)
+		fread(bones, sizeof(Bones), head.BoneCount, filePtr);
+
+		for (UINT i = 0; i < head.AnimationClips; i++)
+		{
+			for (UINT j = 0; j < head.BoneCount; j++)
+			{
+				Bone& b = clip[i].bones[j];
+				fread(&b.frames, sizeof(UINT), 1, filePtr);
+
+				b.boneFrames = new BoneFrame[b.frames];
+				fread(b.boneFrames, sizeof(BoneFrame), b.frames, filePtr);
+			}
+		}
+
+
+		for (UINT i = 0; i < head.BoneCount; i++)
+		{
+			cout << "ParentBone" << i << ": " << bones[i].ParentBone << endl;
+			cout << "Ambient" << i << ": " << bones[i].localOffset._11 << ", " << bones[i].localOffset._12 << ", " << bones[i].localOffset._13 << ", " << bones[i].localOffset._14 << endl;
+		}
+	}
+	/*for (int i = 0; i < head.VertexCount; i++)
 	{
 		cout << "Point" << i << ": " << data[i].pos.x << ", " << data[i].pos.y << ", " << data[i].pos.z << " | " << data[i].tex.x << ", " << data[i].tex.y << " | " << data[i].Normal.x << ", " << data[i].Normal.y << ", " << data[i].Normal.z << " | " << data[i].ID << endl;
 	}
@@ -741,7 +855,7 @@ bool PrintDataInFile(char* filename)
 	for (int i = 0; i < head.IndexCount; i++)
 	{
 		cout << indices[i] << ", ";
-	}
+	}*/
 
 	return true;
 }
@@ -765,6 +879,8 @@ bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT&
 	vertexCount = 0;
 	faceCount = 0;
 	objectCount = 0;
+	UINT boneCount = 0;
+	UINT AnimationClips = 0;
 
 	// Open the file.
 	fin.open(filename);
@@ -793,11 +909,26 @@ bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT&
 
 	fin >> vertexCount;
 
-	// Read FaceCount count
+	// Read Face count
 	for (int k = 0; k < 11; k++)
 		fin.get(input);
 
 	fin >> faceCount;
+
+
+	// Read Bones count
+	for (int k = 0; k < 7; k++)
+		fin.get(input);
+
+	fin >> boneCount;
+
+	// Read AnimationClips count
+	for (int k = 0; k < 16; k++)
+		fin.get(input);
+
+	fin >> AnimationClips;
+
+
 
 	SubsetTableDesc*& sS = (*ppSubSetTable) = new SubsetTableDesc[objectCount];
 	MatrialDesc*& pM = (*ppMaterial) = new MatrialDesc[objectCount];
@@ -966,10 +1097,18 @@ bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT&
 
 			readData(&Vertices[i].tex, &fin);
 
+			// Read BlendWeights
+			for (int k = 0; k < 14; k++)
+				fin.get(input);
 
-			// Skip Blend
-			fin.get(input);
-			fin.get(input);
+			readData(&Vertices[i].BlendWeights, &fin);
+
+			// Read BlendIndices
+			for (int k = 0; k < 14; k++)
+				fin.get(input);
+
+			readData(&Vertices[i].BlendIndices, &fin);
+
 			while (input != '\n')
 			{
 				fin.get(input);
@@ -1022,6 +1161,130 @@ bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT&
 		index++;
 	}
 
+	Bones* bones = 0;
+	AnimClip* clip = 0;
+
+	if (boneCount > 0)
+	{
+		while (input != '*')
+		{
+			fin.get(input);
+		}
+
+		for (int k = 0; k < 30; k++)
+			fin.get(input);
+
+		while (input == '*')
+		{
+			fin.get(input);
+		}
+
+		bones = new Bones[boneCount];
+
+		for (UINT i = 0; i < boneCount; i++)
+		{
+			fin.get(input);
+			// Read boneOffset
+			while (input != ' ')
+				fin.get(input);
+
+			readData(&bones[i].localOffset, &fin);
+		}
+
+		while (input != '*')
+		{
+			fin.get(input);
+		}
+
+		for (int k = 0; k < 30; k++)
+			fin.get(input);
+
+		while (input == '*')
+		{
+			fin.get(input);
+		}
+
+		for (UINT i = 0; i < boneCount; i++)
+		{
+			fin.get(input);
+			while (input != ' ')
+			{
+				fin.get(input);
+			}
+			int tem = 0;
+			fin >> tem;
+			bones[i].ParentBone = tem;
+		}
+
+		while (input != '*')
+		{
+			fin.get(input);
+		}
+
+		for (int k = 0; k < 32; k++)
+			fin.get(input);
+
+		while (input == '*')
+		{
+			fin.get(input);
+		}
+
+
+		clip = new AnimClip[AnimationClips];
+		for (UINT i = 0; i < AnimationClips; i++)
+		{
+
+			clip[i].bones = new Bone[boneCount];
+			for (UINT j = 0; j < boneCount; j++)
+			{
+				Bone& b = clip[i].bones[j];
+				while (input != '#')
+				{
+					fin.get(input);
+				}
+
+				// Read keyframes
+				for (int k = 0; k < 11; k++)
+					fin.get(input);
+
+				fin >> b.frames;
+				b.boneFrames = new BoneFrame[b.frames];
+
+				getline(fin, temp);
+				getline(fin, temp);
+				for (UINT e = 0; e < b.frames; e++)
+				{
+					BoneFrame& f = b.boneFrames[e];
+
+					// Read time
+					for (int k = 0; k < 8; k++)
+						fin.get(input);
+
+					fin >> f.time;
+
+					// Read Pos
+					for (int k = 0; k < 6; k++)
+						fin.get(input);
+
+					readData(&f.Pos, &fin);
+
+					// Read Scale
+					for (int k = 0; k < 8; k++)
+						fin.get(input);
+
+					readData(&f.Scale, &fin);
+
+					// Read Quat
+					for (int k = 0; k < 7; k++)
+						fin.get(input);
+
+					readData(&f.Quat, &fin);
+				}
+
+			}
+		}
+	}
+
 	string name = string(filename);
 	ofstream bout;
 
@@ -1032,6 +1295,8 @@ bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT&
 	head.IndexCount = faceCount*3;
 	head.bfOffBits = sizeof(Header);
 	head.ObjectCount = objectCount;
+	head.BoneCount = boneCount;
+	head.AnimationClips = AnimationClips;
 
 	bout.write((char*)&head, sizeof(Header));
 	bout.write((char*)pM, sizeof(MatrialDesc)*head.ObjectCount);
@@ -1043,6 +1308,22 @@ bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT&
 	{
 		bout.write((char*)tB[i].c_str(), tSB[i]);
 	}
+
+	if (boneCount > 0)
+	{
+		bout.write((char*)bones, sizeof(Bones)*head.BoneCount);
+
+		for (UINT i = 0; i < head.AnimationClips; i++)
+		{
+			for (UINT j = 0; j < head.BoneCount; j++)
+			{
+				UINT frames = clip[i].bones[j].frames;
+				bout.write((char*)&frames, sizeof(UINT));
+				bout.write((char*)clip[i].bones[j].boneFrames, sizeof(BoneFrame)*frames);
+			}
+		}
+	}
+
 
 	bout.close();
 
