@@ -10,6 +10,17 @@
 #include <fstream>
 #include <DirectXMath.h>
 #include <string>
+
+//#include "assimp/Importer.hpp"	//OO version Header!
+//#include "assimp/postprocess.h"
+//#include "assimp/scene.h"
+//#include "assimp/DefaultLogger.hpp"
+//#include "assimp/LogStream.hpp"
+//
+//
+//
+//Assimp::Importer importer;
+
 using namespace DirectX;
 using namespace std;
 
@@ -75,7 +86,6 @@ typedef struct
 	int tIndex1, tIndex2, tIndex3, tIndex4;
 	int nIndex1, nIndex2, nIndex3, nIndex4;
 	int Count;
-	unsigned int ID;
 }FaceType;
 
 struct Header
@@ -100,7 +110,6 @@ struct vertexData
 	XMFLOAT3 Normal;
 	XMFLOAT4 BlendWeights;
 	UINT4 BlendIndices;
-	UINT ID;
 };
 
 struct Body
@@ -120,7 +129,7 @@ bool ReadFileCounts(char*, int&, int&, int&, int&, int&);
 bool LoadDataStructures(char*, int, int, int, int,int);
 bool PrintDataInFile(char*);
 bool M3DReadFileCounts(char*, UINT&, UINT&, UINT&, SubsetTableDesc**, MatrialDesc**);
-
+bool LoadAsset(const char* path);
 
 void fToXM(XMFLOAT3* xm, VertexType v)
 {
@@ -134,12 +143,11 @@ void fToXM(XMFLOAT2* xm, VertexType v)
 	xm->y = v.y;
 }
 
-void insertData(vertexData* data, VertexType p, VertexType t, VertexType n, unsigned int id)
+void insertData(vertexData* data, VertexType p, VertexType t, VertexType n)
 {
 	fToXM(&data->pos, p);
 	fToXM(&data->tex, t);
 	fToXM(&data->Normal, n);
-	data->ID = id;
 }
 
 void readData(XMFLOAT4X4* xm, ifstream* s)
@@ -246,11 +254,26 @@ std::string GetExtension(const std::string& filename)
 	}
 }
 
+
+
+
+
+
 //////////////////
 // MAIN PROGRAM //
 //////////////////
 int main()
 {
+	/*struct aiLogStream stream;
+
+	stream = aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT, NULL);
+	aiAttachLogStream(&stream);
+
+	stream = aiGetPredefinedLogStream(aiDefaultLogStream_FILE, "assimp_log.txt");
+	aiAttachLogStream(&stream);*/
+
+
+
 	bool result;
 	char filename[256];
 	
@@ -551,7 +574,6 @@ bool LoadDataStructures(char* filename, int vertexCount, int textureCount, int n
 					vCount += 3;
 					dr = false;
 				}
-				faces[faceIndex].ID = objectIndex ;
 
 				faceIndex++;
 			}
@@ -648,7 +670,7 @@ bool LoadDataStructures(char* filename, int vertexCount, int textureCount, int n
 			tIndex = faces[i].tIndex1 - 1;
 			nIndex = faces[i].nIndex1 - 1;
 
-			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex], faces[i].ID);
+			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex]);
 
 			index++;
 
@@ -656,7 +678,7 @@ bool LoadDataStructures(char* filename, int vertexCount, int textureCount, int n
 			tIndex = faces[i].tIndex2 - 1;
 			nIndex = faces[i].nIndex2 - 1;
 
-			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex], faces[i].ID);
+			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex]);
 
 			index++;
 
@@ -664,11 +686,11 @@ bool LoadDataStructures(char* filename, int vertexCount, int textureCount, int n
 			tIndex = faces[i].tIndex3 - 1;
 			nIndex = faces[i].nIndex3 - 1;
 
-			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex], faces[i].ID);
+			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex]);
 
 			index++;
 
-			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex], faces[i].ID);
+			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex]);
 
 			index++;
 
@@ -676,7 +698,7 @@ bool LoadDataStructures(char* filename, int vertexCount, int textureCount, int n
 			tIndex = faces[i].tIndex4 - 1;
 			nIndex = faces[i].nIndex4 - 1;
 
-			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex], faces[i].ID);
+			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex]);
 
 			index++;
 
@@ -684,7 +706,7 @@ bool LoadDataStructures(char* filename, int vertexCount, int textureCount, int n
 			tIndex = faces[i].tIndex1 - 1;
 			nIndex = faces[i].nIndex1 - 1;
 
-			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex], faces[i].ID);
+			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex]);
 
 			index++;
 
@@ -695,7 +717,7 @@ bool LoadDataStructures(char* filename, int vertexCount, int textureCount, int n
 			tIndex = faces[i].tIndex2 - 1;
 			nIndex = faces[i].nIndex2 - 1;
 
-			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex], faces[i].ID);
+			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex]);
 
 			index++;
 
@@ -703,7 +725,7 @@ bool LoadDataStructures(char* filename, int vertexCount, int textureCount, int n
 			tIndex = faces[i].tIndex3 - 1;
 			nIndex = faces[i].nIndex3 - 1;
 
-			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex], faces[i].ID);
+			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex]);
 
 			index++;
 
@@ -711,7 +733,7 @@ bool LoadDataStructures(char* filename, int vertexCount, int textureCount, int n
 			tIndex = faces[i].tIndex4 - 1;
 			nIndex = faces[i].nIndex4 - 1;
 
-			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex], faces[i].ID);
+			insertData(&data[index], vertices[vIndex], texcoords[tIndex], normals[nIndex]);
 
 			index++;
 		}
@@ -779,6 +801,7 @@ bool PrintDataInFile(char* filename)
 	unsigned int* textureSize = new unsigned int[head.ObjectCount];
 	char** textureArray = new char*[head.ObjectCount];
 	MatrialDesc* mA = new MatrialDesc[head.ObjectCount];
+	SubsetTableDesc* sS = new SubsetTableDesc[head.ObjectCount];
 	Bones* bones = new Bones[head.BoneCount];
 	AnimClip* clip = new AnimClip[head.AnimationClips];
 	for (UINT i = 0; i < head.AnimationClips; i++)
@@ -791,7 +814,7 @@ bool PrintDataInFile(char* filename)
 
 
 	fread(mA, sizeof(MatrialDesc), head.ObjectCount, filePtr);
-
+	fread(sS, sizeof(SubsetTableDesc), head.ObjectCount, filePtr);
 	fread(data, sizeof(vertexData), head.VertexCount, filePtr);
 	fread(indices, sizeof(unsigned long), head.IndexCount, filePtr);
 	fread(textureSize, sizeof(unsigned int), head.ObjectCount, filePtr);
@@ -843,7 +866,7 @@ bool PrintDataInFile(char* filename)
 		for (UINT i = 0; i < head.BoneCount; i++)
 		{
 			cout << "ParentBone" << i << ": " << bones[i].ParentBone << endl;
-			cout << "Ambient" << i << ": " << bones[i].localOffset._11 << ", " << bones[i].localOffset._12 << ", " << bones[i].localOffset._13 << ", " << bones[i].localOffset._14 << endl;
+			cout << "LocalOffset" << i << ": " << bones[i].localOffset._11 << ", " << bones[i].localOffset._12 << ", " << bones[i].localOffset._13 << ", " << bones[i].localOffset._14 << endl;
 		}
 	}
 	/*for (int i = 0; i < head.VertexCount; i++)
@@ -1119,11 +1142,6 @@ bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT&
 				fin.get(input);
 			}
 
-
-
-			Vertices[i].ID = j;
-
-
 		}
 
 
@@ -1300,7 +1318,7 @@ bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT&
 
 	bout.write((char*)&head, sizeof(Header));
 	bout.write((char*)pM, sizeof(MatrialDesc)*head.ObjectCount);
-
+	bout.write((char*)sS, sizeof(SubsetTableDesc)*head.ObjectCount);
 	bout.write((char*)Vertices, sizeof(vertexData)*head.VertexCount);
 	bout.write((char*)Indices, sizeof(ULONG)*head.IndexCount);
 	bout.write((char*)tSB, sizeof(UINT)*head.ObjectCount);
@@ -1341,4 +1359,11 @@ bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT&
 	// Close the file.
 	fin.close();
 
+}
+
+bool LoadAsset(const char* path)
+{
+	//scene = aiImportFile(path, aiProcessPreset_TargetRealtime_MaxQuality);
+
+	return true;
 }
