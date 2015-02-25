@@ -11,15 +11,20 @@
 #include <DirectXMath.h>
 #include <string>
 
-//#include "assimp/Importer.hpp"	//OO version Header!
-//#include "assimp/postprocess.h"
-//#include "assimp/scene.h"
-//#include "assimp/DefaultLogger.hpp"
-//#include "assimp/LogStream.hpp"
+#include "assimp/Importer.hpp"	//OO version Header!
+#include "assimp/postprocess.h"
+#include "assimp/scene.h"
+#include "assimp/DefaultLogger.hpp"
+#include "assimp/LogStream.hpp"
+
+
 
 ////
 //
-//Assimp::Importer importer;
+Assimp::Importer importer;
+
+const aiScene* scene = nullptr;
+
 
 using namespace DirectX;
 using namespace std;
@@ -130,6 +135,8 @@ bool LoadDataStructures(char*, int, int, int, int,int);
 bool PrintDataInFile(char*);
 bool M3DReadFileCounts(char*, UINT&, UINT&, UINT&, SubsetTableDesc**, MatrialDesc**);
 bool LoadAsset(const char* path);
+void PrintDataToFile(const char* path);
+
 
 void fToXM(XMFLOAT3* xm, VertexType v)
 {
@@ -233,6 +240,26 @@ void readData(float* xm, ifstream* s)
 	(*s) >> (*xm);
 }
 
+void color4ToFloat4(aiColor4D* c, XMFLOAT3* f)
+{
+	f->x = c->r;
+	f->y = c->g;
+	f->z = c->b;
+}
+
+void v3dToFloat(aiVector3D* v, XMFLOAT3* f)
+{
+	f->x = v->x;
+	f->y = v->y;
+	f->z = v->z;
+}
+
+void v3dToFloat(aiVector3D* v, XMFLOAT2* f)
+{
+	f->x = v->x;
+	f->y = v->y;
+}
+
 std::string removeExtension(const std::string& filename) {
 	size_t lastdot = filename.find_last_of(".");
 	if (lastdot == std::string::npos) return filename;
@@ -264,15 +291,6 @@ std::string GetExtension(const std::string& filename)
 //////////////////
 int main()
 {
-	/*struct aiLogStream stream;
-
-	stream = aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT, NULL);
-	aiAttachLogStream(&stream);
-
-	stream = aiGetPredefinedLogStream(aiDefaultLogStream_FILE, "assimp_log.txt");
-	aiAttachLogStream(&stream);*/
-
-
 
 	bool result;
 	char filename[256];
@@ -282,7 +300,8 @@ int main()
 	// Read in the name of the model file.
 	GetModelFilename(filename);
 
-	
+
+
 
 	cin >> garbage;
 	if (garbage == 's')
@@ -292,46 +311,52 @@ int main()
 		return 0;
 	}
 
-	string ext = GetExtension(string(filename));
+
+	LoadAsset(filename);
+
+	PrintDataToFile(filename);
+
+
+	//string ext = GetExtension(string(filename));
 
 
 
-	if (ext == "m3d")
-	{
-		UINT vertexCount, faceCount, objectCount;
-		SubsetTableDesc* SubsetTable;
-		MatrialDesc* Material;
-		M3DReadFileCounts(filename, vertexCount, faceCount, objectCount, &SubsetTable, &Material);
-	}
-	else if (ext == "obj")
-	{
-		int vertexCount, textureCount, normalCount, faceCount, objectCount;
+	//if (ext == "m3d")
+	//{
+	//	UINT vertexCount, faceCount, objectCount;
+	//	SubsetTableDesc* SubsetTable;
+	//	MatrialDesc* Material;
+	//	M3DReadFileCounts(filename, vertexCount, faceCount, objectCount, &SubsetTable, &Material);
+	//}
+	//else if (ext == "obj")
+	//{
+	//	int vertexCount, textureCount, normalCount, faceCount, objectCount;
 
-		// Read in the number of vertices, tex coords, normals, and faces so that the data structures can be initialized with the exact sizes needed.
-		result = ReadFileCounts(filename, vertexCount, textureCount, normalCount, faceCount, objectCount);
-		if (!result)
-		{
-			return -1;
-		}
+	//	// Read in the number of vertices, tex coords, normals, and faces so that the data structures can be initialized with the exact sizes needed.
+	//	result = ReadFileCounts(filename, vertexCount, textureCount, normalCount, faceCount, objectCount);
+	//	if (!result)
+	//	{
+	//		return -1;
+	//	}
 
-		// Display the counts to the screen for information purposes.
-		cout << endl;
-		cout << "Parts: " << objectCount << endl;
-		cout << "Vertices: " << vertexCount << endl;
-		cout << "UVs:      " << textureCount << endl;
-		cout << "Normals:  " << normalCount << endl;
-		cout << "Faces:    " << faceCount << endl;
+	//	// Display the counts to the screen for information purposes.
+	//	cout << endl;
+	//	cout << "Parts: " << objectCount << endl;
+	//	cout << "Vertices: " << vertexCount << endl;
+	//	cout << "UVs:      " << textureCount << endl;
+	//	cout << "Normals:  " << normalCount << endl;
+	//	cout << "Faces:    " << faceCount << endl;
 
-		// Now read the data from the file into the data structures and then output it in our model format.
-		result = LoadDataStructures(filename, vertexCount, textureCount, normalCount, faceCount, objectCount);
-		if (!result)
-		{
-			return -2;
-		}
-	}
+	//	// Now read the data from the file into the data structures and then output it in our model format.
+	//	result = LoadDataStructures(filename, vertexCount, textureCount, normalCount, faceCount, objectCount);
+	//	if (!result)
+	//	{
+	//		return -2;
+	//	}
+	//}
 
-	
-	
+	//
+	//
 
 	// Notify the user the model has been converted.
 	cout << "\nFile has been converted." << endl;
@@ -1364,6 +1389,174 @@ bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT&
 bool LoadAsset(const char* path)
 {
 	//scene = aiImportFile(path, aiProcessPreset_TargetRealtime_MaxQuality);
-
+	scene = importer.ReadFile(path, aiProcessPreset_TargetRealtime_Quality);
 	return true;
+}
+
+void PrintDataToFile(const char* path)
+{
+	string name = string(path);
+	ofstream bout;
+
+	bout.open(removeExtension(name) + ".smf", ios_base::binary);
+
+	Header head;
+	head.VertexCount = 0;
+	head.IndexCount = 0;
+	head.ObjectCount = scene->mNumMeshes;
+	head.BoneCount = 0;
+	head.AnimationClips = 0;
+	head.bfOffBits = sizeof(Header);
+	for (UINT i = 0; i < scene->mNumMeshes; i++)
+	{
+		head.VertexCount += scene->mMeshes[i]->mNumVertices;
+		head.IndexCount += scene->mMeshes[i]->mNumFaces*3;
+	}
+	
+	bout.write((char*)&head, sizeof(Header));
+
+	MatrialDesc* pM = new MatrialDesc[head.ObjectCount];
+	for (UINT i = 0; i < scene->mNumMeshes; i++)
+	{
+		aiColor4D c;
+		aiGetMaterialColor(scene->mMaterials[i], AI_MATKEY_COLOR_SPECULAR, &c);
+		color4ToFloat4(&c, &pM[i].Specular);
+
+		aiGetMaterialColor(scene->mMaterials[i], AI_MATKEY_COLOR_DIFFUSE, &c);
+		color4ToFloat4(&c, &pM[i].Diffuse);
+
+		aiGetMaterialColor(scene->mMaterials[i], AI_MATKEY_COLOR_AMBIENT, &c);
+		color4ToFloat4(&c, &pM[i].Ambient);
+		pM[i].AlphaClip = 0;
+		pM[i].Reflectivity = XMFLOAT3(0, 0, 0);
+		UINT max = 1;
+		aiGetMaterialFloatArray(scene->mMaterials[i], AI_MATKEY_SHININESS, &pM[i].SpecPower, &max);
+	}
+
+
+	bout.write((char*)pM, sizeof(MatrialDesc)*head.ObjectCount);
+
+	SubsetTableDesc* sS = new SubsetTableDesc[head.ObjectCount];
+	sS[0].FaceCount = scene->mMeshes[0]->mNumFaces;
+	sS[0].FaceStart = 0;
+	sS[0].VertexCount = 0;
+	sS[0].VertexStart = 0;
+	sS[0].SubsetID = 0;
+
+	for (UINT i = 1; i < scene->mNumMeshes; i++)
+	{
+		sS[i].FaceCount = scene->mMeshes[i]->mNumFaces;
+		sS[i].FaceStart = sS[i - 1].FaceStart + sS[i - 1].FaceCount;
+		sS[i].VertexCount = 0;
+		sS[i].VertexStart = 0;
+		
+		sS[i].SubsetID = i;
+	}
+
+	bout.write((char*)sS, sizeof(SubsetTableDesc)*head.ObjectCount);
+
+	vertexData* Vertices = new vertexData[head.VertexCount];
+	UINT index = 0;
+	for (UINT i = 0; i < scene->mNumMeshes; i++)
+	{
+		UINT count = scene->mMeshes[i]->mNumVertices;
+		for (UINT j = 0; j < count; j++)
+		{
+			v3dToFloat(&scene->mMeshes[i]->mVertices[j], &Vertices[index].pos);
+			v3dToFloat(&scene->mMeshes[i]->mVertices[j], &Vertices[index].tex);
+			v3dToFloat(&scene->mMeshes[i]->mNormals[j], &Vertices[index].Normal);
+			UINT4 uint;
+			uint.x = 0;
+			uint.y = 0;
+			uint.z = 0;
+			uint.w = 0;
+			Vertices[index].BlendIndices = uint;
+			Vertices[index].BlendWeights = XMFLOAT4(0, 0, 0, 0);
+			index++;
+		}
+		
+	}
+
+	bout.write((char*)Vertices, sizeof(vertexData)*head.VertexCount);
+	index = 0;
+	ULONG* Indices = new ULONG[head.IndexCount];
+	for (UINT i = 0; i < scene->mNumMeshes; i++)
+	{
+		UINT count = scene->mMeshes[i]->mNumFaces;
+		for (UINT j = 0; j < count; j++)
+		{
+			UINT count2 = scene->mMeshes[i]->mFaces[j].mNumIndices;
+			for (UINT k = 0; k < count2; k++)
+			{
+				Indices[index] = (ULONG)scene->mMeshes[i]->mFaces[j].mIndices[k];
+				index++;
+			}			
+		}
+
+	}
+
+	bout.write((char*)Indices, sizeof(ULONG)*head.IndexCount);
+
+	UINT* tSB = new UINT[head.ObjectCount];
+	string* tB = new string[head.ObjectCount];
+	string def = "def.jpg";
+	int texIndex = 0;
+	for (unsigned int m = 0; m<scene->mNumMaterials; m++)
+	{
+		
+		aiReturn texFound = AI_SUCCESS;
+
+		aiString path;	// filename
+
+		while (texFound == AI_SUCCESS)
+		{
+			texFound = scene->mMaterials[m]->GetTexture(aiTextureType_DIFFUSE, texIndex, &path);
+			tSB[texIndex] = path.length + 1;
+			texIndex++;
+		}
+	}
+	if (texIndex == 1)
+	{
+		for (UINT i = 0; i < scene->mNumMeshes; i++)
+		{
+			tSB[i] = def.size() + 1;
+			tB[i] = def;
+		}
+	}
+	bout.write((char*)tSB, sizeof(UINT)*head.ObjectCount);
+
+	for (UINT i = 0; i < head.ObjectCount; i++)
+	{
+		bout.write((char*)tB[i].c_str(), tSB[i]);
+	}
+
+	/*if (head.BoneCount > 0)
+	{
+		Bones* bones = new Bones[head.BoneCount];
+
+
+		bout.write((char*)bones, sizeof(Bones)*head.BoneCount);
+
+		for (UINT i = 0; i < head.AnimationClips; i++)
+		{
+			for (UINT j = 0; j < head.BoneCount; j++)
+			{
+				UINT frames = clip[i].bones[j].frames;
+				bout.write((char*)&frames, sizeof(UINT));
+				bout.write((char*)clip[i].bones[j].boneFrames, sizeof(BoneFrame)*frames);
+			}
+		}
+	}*/
+
+
+	bout.close();
+
+
+	delete[]sS;
+	delete[]pM;
+	delete[]tSB;
+	delete[]tB;
+
+	delete[]Vertices;
+	delete[]Indices;
 }
