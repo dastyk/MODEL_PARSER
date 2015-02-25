@@ -40,6 +40,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>E:\skola\3dprog\Github\MODEL_PARSER\OBJ_Parser\OBJ_Parser\include;$(IncludePath)</IncludePath>
+    <LibraryPath>E:\skola\3dprog\Github\MODEL_PARSER\OBJ_Parser\OBJ_Parser\lib\assimp_debug-dll_win32;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>E:\skola\3dprog\Github\MODEL_PARSER\OBJ_Parser\OBJ_Parser\include;E:\skola\3dprog\Github\MODEL_PARSER\OBJ_Parser\OBJ_Parser\assimp;E:\skola\3dprog\Github\MODEL_PARSER\OBJ_Parser\OBJ_Parser\code;$(IncludePath)</IncludePath>

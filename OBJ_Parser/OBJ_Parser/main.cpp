@@ -11,11 +11,11 @@
 #include <DirectXMath.h>
 #include <string>
 
-//#include "assimp/Importer.hpp"	//OO version Header!
-//#include "assimp/postprocess.h"
-//#include "assimp/scene.h"
-//#include "assimp/DefaultLogger.hpp"
-//#include "assimp/LogStream.hpp"
+#include "assimp/Importer.hpp"	//OO version Header!
+#include "assimp/postprocess.h"
+#include "assimp/scene.h"
+#include "assimp/DefaultLogger.hpp"
+#include "assimp/LogStream.hpp"
 //
 //
 //
