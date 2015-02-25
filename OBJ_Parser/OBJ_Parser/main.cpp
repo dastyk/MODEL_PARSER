@@ -16,7 +16,7 @@
 #include "assimp/scene.h"
 #include "assimp/DefaultLogger.hpp"
 #include "assimp/LogStream.hpp"
-//
+
 //
 //
 //Assimp::Importer importer;
