@@ -99,6 +99,7 @@ struct Header
 	unsigned long IndexCount;
 	unsigned long bfOffBits;	
 	unsigned int ObjectCount;
+	UINT MaterialCount;
 	UINT BoneCount;
 	UINT AnimationClips;
 };
@@ -260,6 +261,12 @@ void v3dToFloat(aiVector3D* v, XMFLOAT2* f)
 	f->y = v->y;
 }
 
+void v3dToFloat(aiColor4D* v, XMFLOAT2* f)
+{
+	f->x = v->r;
+	f->y = v->g;
+}
+
 std::string removeExtension(const std::string& filename) {
 	size_t lastdot = filename.find_last_of(".");
 	if (lastdot == std::string::npos) return filename;
@@ -312,22 +319,24 @@ int main()
 	}
 
 
-	LoadAsset(filename);
-
-	PrintDataToFile(filename);
-
-
-	//string ext = GetExtension(string(filename));
+	
+	string ext = GetExtension(string(filename));
 
 
 
-	//if (ext == "m3d")
-	//{
-	//	UINT vertexCount, faceCount, objectCount;
-	//	SubsetTableDesc* SubsetTable;
-	//	MatrialDesc* Material;
-	//	M3DReadFileCounts(filename, vertexCount, faceCount, objectCount, &SubsetTable, &Material);
-	//}
+	if (ext == "m3d")
+	{
+		UINT vertexCount, faceCount, objectCount;
+		SubsetTableDesc* SubsetTable;
+		MatrialDesc* Material;
+		M3DReadFileCounts(filename, vertexCount, faceCount, objectCount, &SubsetTable, &Material);
+	}
+	else
+	{
+		LoadAsset(filename);
+
+		PrintDataToFile(filename);
+	}
 	//else if (ext == "obj")
 	//{
 	//	int vertexCount, textureCount, normalCount, faceCount, objectCount;
@@ -820,12 +829,13 @@ bool PrintDataInFile(char* filename)
 	cout << "BoneCount: " << head.BoneCount << endl;
 	cout << "AnimationClips: " << head.AnimationClips << endl;
 	cout << "bfOffBits: " << head.bfOffBits << endl << endl;
+	cout << "MaterialCount: " << head.MaterialCount << endl << endl;
 
 	vertexData* data = new vertexData[head.VertexCount];
 	unsigned long* indices = new unsigned long[head.IndexCount];
-	unsigned int* textureSize = new unsigned int[head.ObjectCount];
-	char** textureArray = new char*[head.ObjectCount];
-	MatrialDesc* mA = new MatrialDesc[head.ObjectCount];
+	unsigned int* textureSize = new unsigned int[head.MaterialCount];
+	char** textureArray = new char*[head.MaterialCount];
+	MatrialDesc* mA = new MatrialDesc[head.MaterialCount];
 	SubsetTableDesc* sS = new SubsetTableDesc[head.ObjectCount];
 	Bones* bones = new Bones[head.BoneCount];
 	AnimClip* clip = new AnimClip[head.AnimationClips];
@@ -838,25 +848,24 @@ bool PrintDataInFile(char* filename)
 	fseek(filePtr, head.bfOffBits, SEEK_SET);
 
 
-	fread(mA, sizeof(MatrialDesc), head.ObjectCount, filePtr);
+	fread(mA, sizeof(MatrialDesc), head.MaterialCount, filePtr);
 	fread(sS, sizeof(SubsetTableDesc), head.ObjectCount, filePtr);
 	fread(data, sizeof(vertexData), head.VertexCount, filePtr);
 	fread(indices, sizeof(unsigned long), head.IndexCount, filePtr);
-	fread(textureSize, sizeof(unsigned int), head.ObjectCount, filePtr);
+	fread(textureSize, sizeof(unsigned int), head.MaterialCount, filePtr);
 
 
-	for (unsigned int i = 0; i < head.ObjectCount; i++)
+	for (unsigned int i = 0; i < head.MaterialCount; i++)
 	{
 		textureArray[i] = new char[textureSize[i]];
 	}
-	for (unsigned int i = 0; i < head.ObjectCount; i++)
+	for (unsigned int i = 0; i < head.MaterialCount; i++)
 	{
 		fread(textureArray[i], textureSize[i], 1, filePtr);
 	}
 
-	
 
-	for (unsigned int i = 0; i < head.ObjectCount; i++)
+	for (UINT i = 0; i < head.MaterialCount; i++)
 	{
 		cout << "Ambient" << i << ": " << mA[i].Ambient.x << ", " << mA[i].Ambient.y << ", " << mA[i].Ambient.z << endl;
 		cout << "Diffuse" << i << ": " << mA[i].Diffuse.x << ", " << mA[i].Diffuse.y << ", " << mA[i].Diffuse.z << endl;
@@ -864,7 +873,6 @@ bool PrintDataInFile(char* filename)
 		cout << "SpecPower" << i << ": " << mA[i].SpecPower << endl;
 		cout << "Reflectivity" << i << ": " << mA[i].Reflectivity.x << ", " << mA[i].Reflectivity.y << ", " << mA[i].Reflectivity.z << endl;
 		cout << "AlphaClip" << i << ": " << mA[i].AlphaClip << endl;
-
 		cout << "textureSize" << i << ": " << textureSize[i] << endl;
 		cout << "TextureName" << i << ": " << textureArray[i] << endl;
 	}
@@ -1340,7 +1348,7 @@ bool M3DReadFileCounts(char* filename, UINT& vertexCount, UINT& faceCount, UINT&
 	head.ObjectCount = objectCount;
 	head.BoneCount = boneCount;
 	head.AnimationClips = AnimationClips;
-
+	head.MaterialCount = objectCount;
 	bout.write((char*)&head, sizeof(Header));
 	bout.write((char*)pM, sizeof(MatrialDesc)*head.ObjectCount);
 	bout.write((char*)sS, sizeof(SubsetTableDesc)*head.ObjectCount);
@@ -1404,19 +1412,23 @@ void PrintDataToFile(const char* path)
 	head.VertexCount = 0;
 	head.IndexCount = 0;
 	head.ObjectCount = scene->mNumMeshes;
+	head.MaterialCount = scene->mNumMaterials;
 	head.BoneCount = 0;
 	head.AnimationClips = 0;
 	head.bfOffBits = sizeof(Header);
 	for (UINT i = 0; i < scene->mNumMeshes; i++)
 	{
 		head.VertexCount += scene->mMeshes[i]->mNumVertices;
-		head.IndexCount += scene->mMeshes[i]->mNumFaces*3;
+		for (UINT j = 0; j < scene->mMeshes[i]->mNumFaces; j++)
+		{
+			head.IndexCount += scene->mMeshes[i]->mFaces[j].mNumIndices;
+		}
 	}
 	
 	bout.write((char*)&head, sizeof(Header));
 
-	MatrialDesc* pM = new MatrialDesc[head.ObjectCount];
-	for (UINT i = 0; i < scene->mNumMeshes; i++)
+	MatrialDesc* pM = new MatrialDesc[head.MaterialCount];
+	for (UINT i = 0; i < head.MaterialCount; i++)
 	{
 		aiColor4D c;
 		aiGetMaterialColor(scene->mMaterials[i], AI_MATKEY_COLOR_SPECULAR, &c);
@@ -1434,14 +1446,14 @@ void PrintDataToFile(const char* path)
 	}
 
 
-	bout.write((char*)pM, sizeof(MatrialDesc)*head.ObjectCount);
+	bout.write((char*)pM, sizeof(MatrialDesc)*head.MaterialCount);
 
 	SubsetTableDesc* sS = new SubsetTableDesc[head.ObjectCount];
 	sS[0].FaceCount = scene->mMeshes[0]->mNumFaces;
 	sS[0].FaceStart = 0;
 	sS[0].VertexCount = 0;
 	sS[0].VertexStart = 0;
-	sS[0].SubsetID = 0;
+	sS[0].SubsetID = scene->mMeshes[0]->mMaterialIndex;
 
 	for (UINT i = 1; i < scene->mNumMeshes; i++)
 	{
@@ -1450,21 +1462,30 @@ void PrintDataToFile(const char* path)
 		sS[i].VertexCount = 0;
 		sS[i].VertexStart = 0;
 		
-		sS[i].SubsetID = i;
+		sS[i].SubsetID = scene->mMeshes[i]->mMaterialIndex;
 	}
 
 	bout.write((char*)sS, sizeof(SubsetTableDesc)*head.ObjectCount);
 
 	vertexData* Vertices = new vertexData[head.VertexCount];
 	UINT index = 0;
+
 	for (UINT i = 0; i < scene->mNumMeshes; i++)
 	{
 		UINT count = scene->mMeshes[i]->mNumVertices;
 		for (UINT j = 0; j < count; j++)
 		{
 			v3dToFloat(&scene->mMeshes[i]->mVertices[j], &Vertices[index].pos);
-			v3dToFloat(&scene->mMeshes[i]->mVertices[j], &Vertices[index].tex);
-			v3dToFloat(&scene->mMeshes[i]->mNormals[j], &Vertices[index].Normal);
+			if (scene->mMeshes[i]->HasTextureCoords(0))
+				v3dToFloat(&scene->mMeshes[i]->mTextureCoords[0][j], &Vertices[index].tex);
+			else if (scene->mMeshes[i]->mColors[0] != nullptr)
+				v3dToFloat(&scene->mMeshes[i]->mColors[0][j], &Vertices[index].tex);
+			else
+				Vertices[index].tex = XMFLOAT2(0, 0);
+			if (scene->mMeshes[i]->HasNormals())
+				v3dToFloat(&scene->mMeshes[i]->mNormals[j], &Vertices[index].Normal);
+			else
+				Vertices[index].Normal = XMFLOAT3(0, 0, 0);
 			UINT4 uint;
 			uint.x = 0;
 			uint.y = 0;
@@ -1474,9 +1495,47 @@ void PrintDataToFile(const char* path)
 			Vertices[index].BlendWeights = XMFLOAT4(0, 0, 0, 0);
 			index++;
 		}
-		
+
+
 	}
 
+	/*for (UINT i = 0; i < scene->mNumMeshes; i++)
+	{
+		aiMesh* mesh = scene->mMeshes[i];
+		for (UINT j = 0; j < mesh->mNumFaces; j++)
+		{
+			aiFace* face = &mesh->mFaces[j];
+			for (UINT k = 0; k < face->mNumIndices; k++)
+			{
+				UINT vIndex = face->mIndices[k];
+				v3dToFloat(&mesh->mVertices[vIndex], &Vertices[index].pos);
+				if (mesh->HasTextureCoords(0))
+					v3dToFloat(&mesh->mTextureCoords[0][vIndex], &Vertices[index].tex);
+				else if (mesh->mColors[0] != nullptr)
+					v3dToFloat(&mesh->mColors[0][vIndex], &Vertices[index].tex);
+				else
+					Vertices[index].tex = XMFLOAT2(0, 0);
+				if (mesh->HasNormals())
+					v3dToFloat(&mesh->mNormals[vIndex], &Vertices[index].Normal);
+				else
+					Vertices[index].Normal = XMFLOAT3(0, 0, 0);
+				UINT4 uint;
+				uint.x = 0;
+				uint.y = 0;
+				uint.z = 0;
+				uint.w = 0;
+				Vertices[index].BlendIndices = uint;
+				Vertices[index].BlendWeights = XMFLOAT4(0, 0, 0, 0);
+				index++;
+
+			}
+			
+		}
+		
+
+	}*/
+	UINT max = 0;
+	UINT offset = 0;
 	bout.write((char*)Vertices, sizeof(vertexData)*head.VertexCount);
 	index = 0;
 	ULONG* Indices = new ULONG[head.IndexCount];
@@ -1489,43 +1548,44 @@ void PrintDataToFile(const char* path)
 			for (UINT k = 0; k < count2; k++)
 			{
 				Indices[index] = (ULONG)scene->mMeshes[i]->mFaces[j].mIndices[k];
+				if (Indices[index] > max)
+					max = Indices[index];
+				Indices[index] += offset;
 				index++;
 			}			
 		}
-
+		offset += max;
+		max = 0;
 	}
 
 	bout.write((char*)Indices, sizeof(ULONG)*head.IndexCount);
 
-	UINT* tSB = new UINT[head.ObjectCount];
-	string* tB = new string[head.ObjectCount];
+	UINT* tSB = new UINT[head.MaterialCount];
+	string* tB = new string[head.MaterialCount];
 	string def = "def.jpg";
 	int texIndex = 0;
 	for (unsigned int m = 0; m<scene->mNumMaterials; m++)
 	{
-		
-		aiReturn texFound = AI_SUCCESS;
-
+	
 		aiString path;	// filename
 
-		while (texFound == AI_SUCCESS)
-		{
-			texFound = scene->mMaterials[m]->GetTexture(aiTextureType_DIFFUSE, texIndex, &path);
-			tSB[texIndex] = path.length + 1;
-			texIndex++;
-		}
-	}
-	if (texIndex == 1)
-	{
-		for (UINT i = 0; i < scene->mNumMeshes; i++)
-		{
-			tSB[i] = def.size() + 1;
-			tB[i] = def;
-		}
-	}
-	bout.write((char*)tSB, sizeof(UINT)*head.ObjectCount);
+		scene->mMaterials[m]->GetTexture(aiTextureType_DIFFUSE, 0, &path);
 
-	for (UINT i = 0; i < head.ObjectCount; i++)
+		if (path.length > 0)
+		{
+			tSB[m] = path.length + 1;
+			tB[m] = path.C_Str();
+		}
+		else
+		{
+			tSB[m] = def.size() + 1;
+			tB[m] = def.c_str();
+		}
+
+	}
+	bout.write((char*)tSB, sizeof(UINT)*head.MaterialCount);
+
+	for (UINT i = 0; i < head.MaterialCount; i++)
 	{
 		bout.write((char*)tB[i].c_str(), tSB[i]);
 	}
